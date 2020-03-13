@@ -1,7 +1,9 @@
 package no.hvl.dat110.broker;
 
 import java.util.Set;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import no.hvl.dat110.common.TODO;
 import no.hvl.dat110.common.Logger;
@@ -92,7 +94,16 @@ public class Dispatcher extends Stopable {
 		Logger.log("onConnect:" + msg.toString());
 
 		storage.addClientSession(user, connection);
-
+		
+		//E: Send messages from HashMap for disconnected users when connecting
+		ClientSession session = storage.getSession(user);
+		List<Message> msgList = storage.disconnectedUserMessages.get(user);
+		if(msgList != null) {
+			for(Message message : msgList) {
+				session.send(message);
+				storage.disconnectedUserMessages.remove(user);
+			}
+		}
 	}
 
 	// called by dispatch upon receiving a disconnect message
@@ -103,7 +114,9 @@ public class Dispatcher extends Stopable {
 		Logger.log("onDisconnect:" + msg.toString());
 
 		storage.removeClientSession(user);
-
+		
+		//E: make list for messages when user disconnects
+		storage.disconnectedUserMessages.put(user, new ArrayList<Message>());
 	}
 
 	public void onCreateTopic(CreateTopicMsg msg) {
@@ -168,11 +181,12 @@ public class Dispatcher extends Stopable {
 				if(storage.getSession(subscriber) != null) {
 					Logger.log("onPublish: " + subscriber + " online, message sent");
 					storage.getSession(subscriber).send(msg);
+				} else {
+					storage.disconnectedUserMessages.get(subscriber).add(msg);
+					Logger.log("onPublish: " + subscriber + " is disconnected, message sent to queue");
 				}
 			}
 		}
-		
 		//throw new UnsupportedOperationException(TODO.method());
-
 	}
 }

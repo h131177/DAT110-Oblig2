@@ -1,10 +1,12 @@
 package no.hvl.dat110.broker;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import no.hvl.dat110.common.TODO;
+import no.hvl.dat110.messages.Message;
 import no.hvl.dat110.common.Logger;
 import no.hvl.dat110.messagetransport.Connection;
 
@@ -16,12 +18,18 @@ public class Storage {
 	
 	// data structure for managing currently connected clients
 	// maps from user to corresponding client session object
-	
 	protected ConcurrentHashMap<String, ClientSession> clients;
+	
+	// E
+	// data structure for managing currently disconnected clients
+	// maps from user to messages sent when user was offline
+	protected ConcurrentHashMap<String, List<Message>> disconnectedUserMessages;
+	
 
 	public Storage() {
 		subscriptions = new ConcurrentHashMap<String, Set<String>>();
 		clients = new ConcurrentHashMap<String, ClientSession>();
+		disconnectedUserMessages = new ConcurrentHashMap<String, List<Message>>();
 	}
 
 	public Collection<ClientSession> getSessions() {
@@ -103,7 +111,7 @@ public class Storage {
 		// TODO: remove the user as subscriber to the topic
 		Set<String> subscribers = getSubscribers(topic);
 		subscribers.remove(user);
-		subscriptions.put(user, subscribers);
+		subscriptions.remove(user);
 		//throw new UnsupportedOperationException(TODO.method());
 	}
 }
